@@ -87,3 +87,15 @@ def download_latest_rss_podcasts(feed_url: str, target_dir: str, limit: int) -> 
         set_mp3_metadata(file_path, title, artist)
         print(f"Saved to: {file_path}")
         print(f"  Metadata - Title: {title}, Artist: {artist}")
+
+
+def download_multpile_rss_podcasts(rss_feeds, output_dir, limit) -> None:
+    """Download latest podcasts from multiple RSS feeds."""
+
+    # Download podcasts from each feed
+    for feed_url in rss_feeds:
+        try:
+            print(f"\nProcessing feed: {feed_url}")
+            download_latest_rss_podcasts(feed_url, output_dir, limit)
+        except Exception as e:
+            print(f"Error downloading from {feed_url}: {e}")
