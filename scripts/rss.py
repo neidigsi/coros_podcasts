@@ -3,10 +3,12 @@ import feedparser
 import requests
 from urllib.parse import urlparse
 from mutagen.easyid3 import EasyID3
+import time
 
 
-def download_file(url: str, target_path: str) -> None:
-    """Download a file from a URL to the given target path."""
+def download_file(url: str, target_path: str) -> float:
+    """Download a file from a URL to the given target path. Returns elapsed time."""
+    start_time = time.time()
     response = requests.get(url, stream=True, timeout=30)
     response.raise_for_status()
 
@@ -14,6 +16,9 @@ def download_file(url: str, target_path: str) -> None:
         for chunk in response.iter_content(chunk_size=8192):
             if chunk:
                 f.write(chunk)
+    
+    elapsed = time.time() - start_time
+    return elapsed
 
 
 def get_filename_from_url(url: str) -> str:
@@ -55,6 +60,8 @@ def download_latest_rss_podcasts(feed_url: str, target_dir: str, limit: int) -> 
     os.makedirs(target_dir, exist_ok=True)
 
     entries = feed.entries[:limit]
+    total_time = 0
+    file_count = 0
 
     for entry in entries:
         if not entry.enclosures:
@@ -65,7 +72,6 @@ def download_latest_rss_podcasts(feed_url: str, target_dir: str, limit: int) -> 
             continue
 
         title = entry.get('title', 'Unknown title')
-        # Use feed title as artist if not available in entry
         artist = feed.feed.get('title', 'Unknown artist')
         
         # Generate filename as "artist - title"
@@ -81,12 +87,22 @@ def download_latest_rss_podcasts(feed_url: str, target_dir: str, limit: int) -> 
             continue
 
         print(f"Downloading: {title}")
-        download_file(audio_url, file_path)
+        download_time = download_file(audio_url, file_path)
         
         # Set metadata on MP3
         set_mp3_metadata(file_path, title, artist)
         print(f"Saved to: {file_path}")
         print(f"  Metadata - Title: {title}, Artist: {artist}")
+        print(f"  Download time: {download_time:.2f}s")
+        
+        total_time += download_time
+        file_count += 1
+    
+    if file_count > 0:
+        print(f"\n--- Summary ---")
+        print(f"Downloaded {file_count} file(s)")
+        print(f"Total time: {total_time:.2f}s")
+        print(f"Avg time per file: {total_time/file_count:.2f}s")
 
 
 def download_multpile_rss_podcasts(rss_feeds, output_dir, limit) -> None:
