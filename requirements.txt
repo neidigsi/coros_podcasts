@@ -1,3 +1,4 @@
 feedparser==6.0.12
 requests==2.32.5
 python-dotenv==1.2.1
+mutagen==1.47.0

@@ -2,6 +2,7 @@ import os
 import feedparser
 import requests
 from urllib.parse import urlparse
+from mutagen.easyid3 import EasyID3
 
 
 def download_file(url: str, target_path: str) -> None:
@@ -18,6 +19,31 @@ def download_file(url: str, target_path: str) -> None:
 def get_filename_from_url(url: str) -> str:
     """Extract filename from URL."""
     return os.path.basename(urlparse(url).path)
+
+
+def sanitize_filename(filename: str) -> str:
+    """Remove invalid characters from filename."""
+    invalid_chars = r'<>:"/\|?*'
+    for char in invalid_chars:
+        filename = filename.replace(char, '')
+    return filename.strip()
+
+
+def set_mp3_metadata(file_path: str, title: str, artist: str) -> None:
+    """Set ID3 metadata tags on an MP3 file."""
+    try:
+        audio = EasyID3(file_path)
+    except:
+        # If file has no ID3 tags, create new ones
+        from mutagen.id3 import ID3
+        audio = ID3()
+    
+    if title:
+        audio['title'] = title
+    if artist:
+        audio['artist'] = artist
+    
+    audio.save(file_path, v2_version=3)
 
 
 def download_latest_rss_podcasts(feed_url: str, target_dir: str, limit: int) -> None:
@@ -38,13 +64,26 @@ def download_latest_rss_podcasts(feed_url: str, target_dir: str, limit: int) -> 
         if not audio_url:
             continue
 
-        filename = get_filename_from_url(audio_url)
+        title = entry.get('title', 'Unknown title')
+        # Use feed title as artist if not available in entry
+        artist = feed.feed.get('title', 'Unknown artist')
+        
+        # Generate filename as "artist - title"
+        original_filename = get_filename_from_url(audio_url)
+        file_extension = os.path.splitext(original_filename)[1]
+        sanitized_title = sanitize_filename(title)
+        sanitized_artist = sanitize_filename(artist)
+        filename = f"{sanitized_artist} - {sanitized_title}{file_extension}"
         file_path = os.path.join(target_dir, filename)
 
         if os.path.exists(file_path):
             print(f"Skipping existing file: {filename}")
             continue
 
-        print(f"Downloading: {entry.get('title', 'Unknown title')}")
+        print(f"Downloading: {title}")
         download_file(audio_url, file_path)
+        
+        # Set metadata on MP3
+        set_mp3_metadata(file_path, title, artist)
         print(f"Saved to: {file_path}")
+        print(f"  Metadata - Title: {title}, Artist: {artist}")
