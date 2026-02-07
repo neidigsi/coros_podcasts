@@ -4,7 +4,24 @@ A **LaunchAgent** is a macOS mechanism that automatically runs scripts when spec
 
 ## Installation Steps
 
-### Step 1: Create the Launch Agent File
+### Step 1: Grant System Permissions
+
+Before setting up the launch agent, you need to grant `/usr/bin/python3` the necessary permissions in macOS System Settings:
+
+1. Open **System Settings** → **Privacy & Security**
+2. Scroll down and select **Full Disk Access**
+3. Click the **+** button to add an application
+4. Press **Cmd + Shift + G** to open the "Go to Folder" dialog
+5. Enter `/usr/bin` and press **Enter**
+6. Select **python3** and click **Open**
+7. Confirm the addition
+
+Alternatively, you can grant permissions via Terminal:
+```bash
+sudo security add-trusted-cert -d -r trustAsRoot -k /Library/Keychains/System.keychain /path/to/cert
+```
+
+### Step 2: Create the Launch Agent File
 
 Copy and customize the launch agent template:
 
@@ -13,7 +30,7 @@ Copy and customize the launch agent template:
 cp launchagents/launchagent.xml ~/Library/LaunchAgents/coros_podcast.usb.plist
 ```
 
-### Step 2: Edit the Configuration
+### Step 3: Edit the Configuration
 
 Open the file in your preferred editor:
 
@@ -39,7 +56,7 @@ diskutil list
 ls -la /Volumes/ | grep -i coros
 ```
 
-### Step 3: Load the Launch Agent
+### Step 4: Load the Launch Agent
 
 After saving the file, load the launch agent:
 
@@ -47,7 +64,7 @@ After saving the file, load the launch agent:
 launchctl load ~/Library/LaunchAgents/coros_podcast.usb.plist
 ```
 
-### Step 4: Verify Installation
+### Step 5: Verify Installation
 
 Check if the launch agent is loaded:
 

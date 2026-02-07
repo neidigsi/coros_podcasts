@@ -1,9 +1,30 @@
 import os
 import feedparser
 import requests
+import subprocess
+import sys
 from urllib.parse import urlparse
 from mutagen.easyid3 import EasyID3
 import time
+
+
+def send_notification(title: str, message: str) -> None:
+    """Send a native macOS notification."""
+    try:
+        script = f'display notification "{message}" with title "{title}"'
+        subprocess.run(
+            ["osascript", "-e", script],
+            check=True,
+            capture_output=True,
+        )
+    except (subprocess.CalledProcessError, FileNotFoundError) as e:
+        print(f"Warning: Could not send notification: {e}", file=sys.stderr)
+
+
+def log_error(message: str) -> None:
+    """Log error message and send notification."""
+    print(f"Error: {message}")
+    send_notification("Podcast Sync - Error", message)
 
 
 def download_file(url: str, target_path: str) -> float:
@@ -55,7 +76,8 @@ def download_latest_rss_podcasts(feed_url: str, target_dir: str, limit: int) -> 
     feed = feedparser.parse(feed_url)
 
     if not feed.entries:
-        raise RuntimeError("No podcast entries found in RSS feed.")
+        log_error("No podcast entries found in RSS feed.")
+        return
 
     os.makedirs(target_dir, exist_ok=True)
 
@@ -114,4 +136,5 @@ def download_multpile_rss_podcasts(rss_feeds, output_dir, limit) -> None:
             print(f"\nProcessing feed: {feed_url}")
             download_latest_rss_podcasts(feed_url, output_dir, limit)
         except Exception as e:
-            print(f"Error downloading from {feed_url}: {e}")
+            error_message = f"Error downloading from {feed_url}: {e}"
+            log_error(error_message)
