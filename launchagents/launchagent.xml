@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN"
+ "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+    <dict>
+        <key>Label</key>
+        <string>podcast.usb.sync</string>
+
+        <key>ProgramArguments</key>
+        <array>
+            <string>/usr/bin/python3</string>
+            <string>/Users/PATH/TO/REPO/scripts/main.py</string>
+        </array>
+
+        <key>WatchPaths</key>
+        <array>
+            <string>/Volumes/PACE 4</string>
+        </array>
+
+        <key>RunAtLoad</key>
+        <true/>
+
+        <key>StandardOutPath</key>
+        <string>/tmp/coros_podcast.log</string>
+        <key>StandardErrorPath</key>
+        <string>/tmp/coros_podcast.err</string>
+    </dict>
+</plist>

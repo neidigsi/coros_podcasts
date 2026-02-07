@@ -2,9 +2,30 @@ import os
 import json
 import shutil
 import tempfile
+import subprocess
+import sys
 from pathlib import Path
 from dotenv import load_dotenv
 from rss import download_multpile_rss_podcasts
+
+
+def send_notification(title: str, message: str) -> None:
+    """Send a native macOS notification."""
+    try:
+        script = f'display notification "{message}" with title "{title}"'
+        subprocess.run(
+            ["osascript", "-e", script],
+            check=True,
+            capture_output=True,
+        )
+    except (subprocess.CalledProcessError, FileNotFoundError) as e:
+        print(f"Warning: Could not send notification: {e}", file=sys.stderr)
+
+
+def log_error(message: str) -> None:
+    """Log error message and send notification."""
+    print(f"Error: {message}")
+    send_notification("Podcast Sync - Error", message)
 
 
 def validate_output_directory(directory: str) -> bool:
@@ -12,15 +33,15 @@ def validate_output_directory(directory: str) -> bool:
     path = Path(directory).expanduser().resolve()
     
     if not path.exists():
-        print(f"Error: Output directory does not exist: {directory}")
+        log_error(f"Output directory does not exist: {directory}")
         return False
     
     if not path.is_dir():
-        print(f"Error: Output path is not a directory: {directory}")
+        log_error(f"Output path is not a directory: {directory}")
         return False
     
     if not os.access(path, os.W_OK | os.R_OK):
-        print(f"Error: No read/write permissions for directory: {directory}")
+        log_error(f"No read/write permissions for directory: {directory}")
         return False
     
     # Test write access by creating a temporary file
@@ -29,7 +50,7 @@ def validate_output_directory(directory: str) -> bool:
         test_file.touch()
         test_file.unlink()
     except Exception as e:
-        print(f"Error: Cannot write to directory: {e}")
+        log_error(f"Cannot write to directory: {e}")
         return False
     
     return True
@@ -48,7 +69,7 @@ def delete_existing_mp3_files(directory: str) -> None:
                 mp3_file.unlink()
                 print(f"  Deleted: {mp3_file.name}")
             except Exception as e:
-                print(f"  Error deleting {mp3_file.name}: {e}")
+                log_error(f"Error deleting {mp3_file.name}: {e}")
     else:
         print("No existing MP3 files found.")
 
@@ -68,7 +89,7 @@ def copy_mp3_files(source_dir: str, target_dir: str) -> None:
                 shutil.copy2(mp3_file, target_file)
                 print(f"  Copied: {mp3_file.name}")
             except Exception as e:
-                print(f"  Error copying {mp3_file.name}: {e}")
+                log_error(f"Error copying {mp3_file.name}: {e}")
 
 
 def main():
@@ -82,18 +103,22 @@ def main():
     
     # Parse RSS feeds from JSON array
     rss_feeds_json = os.getenv("RSS_FEEDS", "[]")
+    print(f"Parsing RSS feeds from environment variable: {rss_feeds_json}")
     try:
         rss_feeds = json.loads(rss_feeds_json)
     except json.JSONDecodeError:
-        print("Error: RSS_FEEDS must be a valid JSON array")
+        log_error("RSS_FEEDS must be a valid JSON array")
         return
     
     if not rss_feeds:
-        print("No RSS feed URLs found in .env file")
+        log_error("No RSS feed URLs found in .env file")
         return
     
     print(f"Found {len(rss_feeds)} RSS feeds to process")
     print(f"Output directory: {output_dir}")
+    
+    # Send start notification
+    send_notification("Podcast Sync", "🔄 Starting podcast synchronization...")
     
     # Validate output directory
     if not validate_output_directory(output_dir):
@@ -113,6 +138,9 @@ def main():
         copy_mp3_files(temp_dir, output_dir)
     
     print("\nCompleted!")
+    
+    # Send completion notification
+    send_notification("Podcast Sync", "✅ Podcast synchronization completed successfully!")
 
 
 if __name__ == "__main__":
