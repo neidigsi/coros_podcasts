@@ -35,6 +35,12 @@ venv\Scripts\activate  # Windows
 pip install -r requirements.txt
 ```
 
+### 4. Create Launch Agent
+
+A **LaunchAgent** is a macOS mechanism that automatically runs scripts when your Coros watch is connected. 
+
+For detailed setup instructions, see the [Launch Agent Setup Guide](launchagents/README.md).
+
 ## Configuration
 
 ### Create .env File

@@ -2,9 +2,24 @@ import os
 import json
 import shutil
 import tempfile
+import subprocess
+import sys
 from pathlib import Path
 from dotenv import load_dotenv
 from rss import download_multpile_rss_podcasts
+
+
+def send_notification(title: str, message: str) -> None:
+    """Send a native macOS notification."""
+    try:
+        script = f'display notification "{message}" with title "{title}"'
+        subprocess.run(
+            ["osascript", "-e", script],
+            check=True,
+            capture_output=True,
+        )
+    except (subprocess.CalledProcessError, FileNotFoundError) as e:
+        print(f"Warning: Could not send notification: {e}", file=sys.stderr)
 
 
 def validate_output_directory(directory: str) -> bool:
@@ -95,6 +110,9 @@ def main():
     print(f"Found {len(rss_feeds)} RSS feeds to process")
     print(f"Output directory: {output_dir}")
     
+    # Send start notification
+    send_notification("Podcast Sync", "🔄 Starting podcast synchronization...")
+    
     # Validate output directory
     if not validate_output_directory(output_dir):
         return
@@ -113,6 +131,9 @@ def main():
         copy_mp3_files(temp_dir, output_dir)
     
     print("\nCompleted!")
+    
+    # Send completion notification
+    send_notification("Podcast Sync", "✅ Podcast synchronization completed successfully!")
 
 
 if __name__ == "__main__":
